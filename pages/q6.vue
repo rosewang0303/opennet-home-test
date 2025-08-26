@@ -164,11 +164,9 @@ function calculateOdds() {
   }
 
   if (products.length === 1) {
-    return products[0]!.toFixed(2);
+    return products[0];
   } else {
-    return `${Math.min(...products).toFixed(2)} ~ ${Math.max(
-      ...products
-    ).toFixed(2)}`;
+    return `${Math.min(...products)} ~ ${Math.max(...products)}`;
   }
 }
 </script>
