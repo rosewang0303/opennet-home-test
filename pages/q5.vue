@@ -8,15 +8,15 @@
     </h1>
 
     <UCollapsible class="rounded-lg border border-gray-200 p-4">
-        <h2 class="text-4">Click to see some hints</h2>
-        <template #content>
-          <VideoCard :source="vQ5" />
-          <ul>
-            <li>1. 但可以看出 CurrentTime 有明顯卡頓, 有什麼優化方式?</li>
-            <li>2. 解法不只一種, 可以提供更多想法</li>
-          </ul>
-        </template>
-      </UCollapsible>
+      <h2 class="text-4">Click to see some hints</h2>
+      <template #content>
+        <VideoCard :source="vQ5" />
+        <ul>
+          <li>1. 但可以看出 CurrentTime 有明顯卡頓, 有什麼優化方式?</li>
+          <li>2. 解法不只一種, 可以提供更多想法</li>
+        </ul>
+      </template>
+    </UCollapsible>
     <Separator />
 
     <h2 class="text-lg">Show Data here:</h2>
@@ -33,13 +33,13 @@
 </template>
 
 <script lang="ts" setup>
-import { useQ5 } from '@/composables/useQ5'
-import vQ5 from '@/assets/q5.mov'
+import { useQ5 } from "@/composables/useQ5";
+import vQ5 from "@/assets/q5.mov";
 
 /**
  * 請取得 list 中的每一筆資料的 detail, 並且將結果寫入 data
  * Please get the detail of each item in list, and write the result to data
- * 
+ *
  * Note:
  * - fetchList 與 fetchDetail 都是模擬 API 請求的函數
  * - 如何避免瞬間大量請求
@@ -47,20 +47,43 @@ import vQ5 from '@/assets/q5.mov'
  */
 
 defineOptions({
-  name: 'Q5',
-})
+  name: "Q5",
+});
 
-const data = ref<any>([])
+const data = ref<any>([]);
 
-const { 
-  fetchList,
-  fetchDetail,
-} = useQ5()
+const { fetchList, fetchDetail } = useQ5();
 
-const run = async () => {}
+const run = async () => {
+  data.value = [];
 
+  // 1. Fetch the list first
+  const list = await fetchList();
+
+  // Limit concurrent requests to avoid UI blocking
+  const concurrency = 3;
+  let index = 0;
+
+  while (index < list.length) {
+    // 2. Take a batch of items (max = concurrency)
+    const batch = list.slice(index, index + concurrency);
+
+    // 3. Fetch details concurrently for the batch
+    const results = await Promise.all(
+      batch.map((item) => fetchDetail(item.id))
+    );
+
+    // 4. Push results into state gradually
+    data.value.push(...results);
+
+    // Move to next batch
+    index += concurrency;
+
+    // 5. Yield control to Vue rendering loop
+    //    This ensures the UI (CurrentTime) does not freeze
+    await nextTick();
+  }
+};
 </script>
 
-<style>
-
-</style>
+<style></style>
